@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sajtok</title>
+    <style>
+        body { background-color: cornflowerblue; }
+
+        .container {
+            margin: 0px;
+            background-color: white;
+            width: 90%;
+            margin: 10px auto;
+            border: 2px solid black;
+        }
+
+        .fejlec {
+            background-color: mediumslateblue;
+            border-bottom: 2px solid black;
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        .tableFejlec { background-color: deepskyblue; border-bottom: 2px solid black; }
+
+        table, tr, td { border-collapse: collapse; }
+
+        .tableFejlec table tr td {
+            border: 1px solid gray;
+            padding: 5px;
+            background-color:deepskyblue;
+        }
+
+        .tableBe { max-height: 200px; overflow-y: scroll; }
+
+        .tableBe table tr td {
+            border: 1px solid gray;
+            padding: 5px;
+        }
+
+        .nev { width: 100%; }
+        .other { min-width: 70px; text-align: center; }
+        .scrollbar { min-width: 6px; }
+        .sor:hover { background-color: beige; transition: .5s;}
+
+        .pointer { cursor: pointer; }
+
+        .kimenet { background-color: lightgray; padding: 5px; }
+
+        #nev { width: 200px; }
+        #suly { width: 70px; }
+        #ar { width: 100px; }
+
+        #valasz { width: 90%; margin: auto; font-size: 20pt;}
+
+        img { vertical-align: middle; }
+    </style>
+    <script>
+        async function betolt() {
+            let response = await fetch("http://localhost:88/sajtok");
+            let json = await response.json();
+            let html = "";
+            for (let sajt of json) {
+                html += `
+                <tr class="sor" onclick="clickSor('${sajt.nev}', ${sajt.suly}, ${sajt.ar})">
+                    <td class="nev">${sajt.nev}</td>
+                    <td class="other">${sajt.suly}</td>
+                    <td class="other">${sajt.ar}</td>
+                    <td class="other"><img class="pointer" src="update.png" onclick="modSajt(${sajt.id}, '${sajt.nev}', ${sajt.suly}, ${sajt.ar});">  <img class="pointer" src="del.png" onclick="delSajt(${sajt.id});"></td>
+                </tr>`
+            }
+            document.getElementById("tableBe").innerHTML = html;
+            document.getElementById("fejlecBe").innerHTML = `Sajtok (${json.length} darab) - Sajtok`;
+        }
+
+        async function arak() {
+            let response = await fetch("http://localhost:88/ar");
+            let json = await response.json();
+            let html = "";
+            for (let sajt of json) {
+                html += `
+                <tr class="sor" onclick="clickSor('${sajt.nev}', ${sajt.suly}, ${sajt.ar})">
+                    <td class="nev">${sajt.nev}</td>
+                    <td class="other">${sajt.suly}</td>
+                    <td class="other">${sajt.ar}</td>
+                    <td class="other"><img class="pointer" src="update.png" onclick="modSajt(${sajt.id}, '${sajt.nev}', ${sajt.suly}, ${sajt.ar});">  <img class="pointer" src="del.png" onclick="delSajt(${sajt.id});"></td>
+                </tr>`
+            }
+            document.getElementById("tableBe").innerHTML = html;
+            document.getElementById("fejlecBe").innerHTML = `Sajtok (${json.length} darab) - Ár szerint csökkenő`;
+        }
+
+        async function save() {
+            let response = await fetch("http://localhost:88/save");
+            let json = await response.json();
+            if (json.status) document.getElementById("valasz").innerHTML = json.status;
+            else document.getElementById("valasz").innerHTML = json.error;
+        }
+
+        function clickSor(nev, suly, ar) {
+            document.getElementById("nev").value = nev;
+            document.getElementById("suly").value = suly;
+            document.getElementById("ar").value = ar;
+        }
+
+        async function modSajt(id, nev, suly, ar) {
+            let textNev = document.getElementById("nev").value;
+            let textSuly = document.getElementById("suly").value;
+            let textAr = document.getElementById("ar").value;
+
+            if (textNev == "" && textSuly == "" && textAr != "") {
+                let request = await fetch("http://localhost:88/ar", {
+                    method: "PATCH",
+                    headers: { "Content-Type" : "application/json" },
+                    body: JSON.stringify({ id:id, ar:textAr })
+                });
+                let json = await request.json();
+                if (json.status) document.getElementById("valasz").innerHTML = json.status;
+                else document.getElementById("valasz").innerHTML = json.error;
+            } else if (textNev != "" && textSuly != "" && textAr != "") {
+                let request = await fetch("http://localhost:88/sajt", {
+                    method: "PUT",
+                    headers: { "Content-Type" : "application/json" },
+                    body: JSON.stringify({ id:id, nev:textNev, suly:textSuly, ar:textAr })
+                });
+                let json = await request.json();
+                if (json.status) document.getElementById("valasz").innerHTML = json.status;
+                else document.getElementById("valasz").innerHTML = json.error;
+            }
+            betolt();
+        }
+
+        async function delSajt(id) {
+            let request = await fetch("http://localhost:88/sajt", {
+                    method: "DELETE",
+                    headers: { "Content-Type" : "application/json" },
+                    body: JSON.stringify({ id:id })
+                });
+            let json = await request.json();
+            if (json.status) document.getElementById("valasz").innerHTML = json.status;
+            else document.getElementById("valasz").innerHTML = json.error;
+            betolt();
+        }
+
+        async function saveSajt() {
+            let textNev = document.getElementById("nev").value;
+            let textSuly = document.getElementById("suly").value;
+            let textAr = document.getElementById("ar").value;
+
+            let request = await fetch("http://localhost:88/sajt", {
+                    method: "POST",
+                    headers: { "Content-Type" : "application/json" },
+                    body: JSON.stringify({ nev:textNev, suly:textSuly, ar:textAr })
+                });
+            let json = await request.json();
+            if (json.status) document.getElementById("valasz").innerHTML = json.status;
+            else document.getElementById("valasz").innerHTML = json.error;
+            betolt();
+        }
+    </script>
+</head>
+<body onload="betolt();">
+    <div class="container">
+        <div class="fejlec" id="fejlecBe"> Sajtok (? darab) - ?</div>
+        <div class="tableFejlec">
+            <table>
+                <tr>
+                    <td class="nev">Név</td>
+                    <td class="other">Súly</td>
+                    <td class="other">Ár <img class="pointer" src="arak.png" onclick="arak();"></td>
+                    <td class="other"><img class="pointer" src="save.png" onclick="save();"></td>
+                    <td class="scrollbar"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="tableBe"><table id="tableBe"></table></div>
+    </div>
+
+    <div class="container">
+        <div class="fejlec"> Új / kiválasztott sajt</div>
+        <div class="kimenet">
+            <input type="text" id="nev" placeholder="Sajtnév">
+            <input type="text" id="suly" placeholder="Súly">
+            <input type="text" id="ar" placeholder="Ár">
+            <img class="pointer" src="add.png" onclick="saveSajt();">
+        </div>
+    </div>
+
+    <div id="valasz">?</div>
+</body>
+</html>
